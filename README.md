@@ -1,0 +1,1 @@
+# always-encrypted-dacpac
