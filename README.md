@@ -1,1 +1,1 @@
-# always-encrypted-dacpac
+# Publish DACPAC to Azure SQL with Always Encrypted

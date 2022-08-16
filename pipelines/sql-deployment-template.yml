@@ -1,0 +1,53 @@
+trigger: none
+
+pool:
+  vmImage: windows-2022
+
+variables:
+- name: AzureSvcName
+  value: AyharaSampleConnectionService # Replace your SVC name
+- group: iac-deploy-variables
+- name: SqlServerName
+  value: sql-ayhara-sample # Replace your SQL Server name
+- name: SqlDatabaseName
+  value: sqldb-ayhara-sample-ado-dacpac # Replace your SQL DB name
+- name: resourceGroup
+  value: rg-ayhara-playground # Replace your Resource Group name
+
+stages:
+  - stage: BuildDacpac
+    jobs:
+      - job: BuildDacpac
+        displayName: Build DACPAC
+        steps:
+          - task: VSBuild@1
+            displayName: Build DACPAC
+            inputs:
+              solution: "**/*.sln"
+              platform: Any CPU
+              configuration: Release
+          - task: PublishPipelineArtifact@1
+            displayName: Publish DACPAC
+            inputs:
+              targetPath: $(Build.SourcesDirectory)
+              artifactName: sqlproj_artifacts
+
+  - stage: DeployDacpac
+    jobs:
+      - job: DeployDacpac
+        steps:
+          - task: DownloadPipelineArtifact@2
+            displayName: Download DACPAC
+            inputs:
+              artifact: sqlproj_artifacts
+          - task: SqlAzureDacpacDeployment@1
+            displayName: Deploy DACPAC
+            inputs:
+              azureSubscription: $(AzureSvcName)
+              ServerName: $(SqlServerName).database.windows.net
+              DatabaseName: $(SqlDatabaseName)
+              SqlUsername: $(SQLUSER)
+              SqlPassword: $(SQLPASSWORD)
+              DacpacFile: $(Pipeline.Workspace)/src/DB/bin/Release/DB.dacpac
+              ipDetectionMethod: AutoDetect
+              DeleteFirewallRule: true
